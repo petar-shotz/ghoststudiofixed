@@ -8,5 +8,12 @@ runConfig:
 env:
   - variable: NOTIFICATION_EMAIL
     value: p8339378@gmail.com
+
   - variable: ALLOWED_ORIGINS
     value: https://ghoststudio.mk,https://www.ghoststudio.mk
+
+  - variable: ADMIN_PASSWORD
+    secret: ADMIN_PASSWORD
+
+  - variable: ADMIN_SESSION_SECRET
+    secret: ADMIN_SESSION_SECRET
