@@ -1,0 +1,6 @@
+{
+  "name": "Ghost Studio",
+  "description": "Custom website design studio with 5-step project planner, secure admin lead management, and reliable email notifications for ghoststudio.mk",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

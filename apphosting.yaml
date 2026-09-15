@@ -1,0 +1,12 @@
+runConfig:
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: NOTIFICATION_EMAIL
+    value: p8339378@gmail.com
+  - variable: ALLOWED_ORIGINS
+    value: https://ghoststudio.mk,https://www.ghoststudio.mk
