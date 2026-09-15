@@ -13,7 +13,7 @@ env:
     value: https://ghoststudio.mk,https://www.ghoststudio.mk
 
   - variable: ADMIN_PASSWORD
-    secret: ADMIN_PASSWORD
+    secret: MINE_craft123
 
   - variable: ADMIN_SESSION_SECRET
-    secret: ADMIN_SESSION_SECRET
+    secret: 99c8ae407b76345ab4684770743a7c3de3f7107a1f1fb1da7bdd09e1b1468deb
