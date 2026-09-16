@@ -10,7 +10,7 @@ env:
     value: p8339378@gmail.com
 
   - variable: ALLOWED_ORIGINS
-    value: https://ghoststudio.mk,https://www.ghoststudio.mk
+    value: "https://ghoststudio.mk,https://www.ghoststudio.mk"
 
   - variable: ADMIN_PASSWORD
     secret: ADMIN_PASSWORD
@@ -18,7 +18,7 @@ env:
   - variable: ADMIN_SESSION_SECRET
     secret: ADMIN_SESSION_SECRET
 
-      - variable: RESEND_API_KEY
+  - variable: RESEND_API_KEY
     secret: RESEND_API_KEY
 
   - variable: RESEND_FROM_EMAIL
