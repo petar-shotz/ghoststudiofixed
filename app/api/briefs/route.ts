@@ -2,6 +2,7 @@ import {
   consumeSubmissionQuota,
   createProjectBriefIfAbsent,
   getProjectBrief,
+  updateProjectBriefCustomerNotification,
   type ProjectBriefRecord,
 } from "@/db";
 import {
@@ -15,7 +16,7 @@ import {
   timelineOptions,
 } from "@/lib/brief";
 import { getClientIpHash } from "@/lib/auth";
-import { recordNotificationResult, sendBriefNotification } from "@/lib/notifications";
+import { recordNotificationResult, sendBriefNotification, sendCustomerConfirmationEmail } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -119,18 +120,38 @@ export async function POST(request: Request) {
   const payloadHash = await sha256(JSON.stringify(values));
 
   try {
-    // Idempotency is checked before consuming the visitor's rate-limit allowance.
-    const existing = await getProjectBrief(requestId);
-    if (existing) {
-      if (existing.payload_hash !== payloadHash) {
+    const handleExisting = async (existingBrief: ProjectBriefRecord) => {
+      if (existingBrief.payload_hash !== payloadHash) {
         return response({ error: "This request changed. Please try sending it again." }, 409);
       }
 
+      let currentNotificationStatus = existingBrief.notification_status;
+      if (currentNotificationStatus !== "sent") {
+        const notificationResult = await sendBriefNotification(existingBrief);
+        await recordNotificationResult(requestId, notificationResult);
+        if (notificationResult.success) {
+          currentNotificationStatus = "sent";
+        }
+      }
+
+      if (!existingBrief.customer_notified) {
+        const customerRes = await sendCustomerConfirmationEmail(existingBrief);
+        if (customerRes.success) {
+          await updateProjectBriefCustomerNotification(requestId);
+        }
+      }
+
       return response({
-        reference: existing.reference,
+        reference: existingBrief.reference,
         saved: true,
-        notificationStatus: existing.notification_status || "pending",
+        notificationStatus: currentNotificationStatus || "pending",
       });
+    };
+
+    // Idempotency is checked before consuming the visitor's rate-limit allowance.
+    const existing = await getProjectBrief(requestId);
+    if (existing) {
+      return handleExisting(existing);
     }
 
     const ipHash = await getClientIpHash();
@@ -186,6 +207,7 @@ export async function POST(request: Request) {
       provided_assets: assetsJson,
       inspiration: data.inspiration || "",
       privacy_consent: true,
+      customer_notified: false,
       rate_key: ipHash,
       payload_hash: payloadHash,
     };
@@ -193,20 +215,19 @@ export async function POST(request: Request) {
     // A Firestore transaction makes concurrent retries safe and prevents partial writes.
     const saveResult = await createProjectBriefIfAbsent(brief);
     if (!saveResult.created) {
-      if (saveResult.existing.payload_hash !== payloadHash) {
-        return response({ error: "This request changed. Please try sending it again." }, 409);
-      }
-
-      return response({
-        reference: saveResult.existing.reference,
-        saved: true,
-        notificationStatus: saveResult.existing.notification_status || "pending",
-      });
+      return handleExisting(saveResult.existing);
     }
 
     // Saving succeeds independently of email delivery, so an email outage cannot lose the lead.
     const notificationResult = await sendBriefNotification(brief);
     await recordNotificationResult(requestId, notificationResult);
+
+    if (!brief.customer_notified) {
+      const customerRes = await sendCustomerConfirmationEmail(brief);
+      if (customerRes.success) {
+        await updateProjectBriefCustomerNotification(requestId);
+      }
+    }
 
     return response(
       {

@@ -36,8 +36,14 @@ export async function getClientIpHash(): Promise<string> {
   const headerList = await headers();
   const forwarded = headerList.get("x-forwarded-for") || "";
   const realIp = headerList.get("x-real-ip") || "";
-  const cfIp = headerList.get("cf-connecting-ip") || "";
-  const rawIp = (forwarded.split(",")[0] || realIp || cfIp || "127.0.0.1").trim();
+  const fastlyIp = headerList.get("fastly-client-ip") || "";
+  
+  // X-Forwarded-For can be spoofed. Behind managed edge proxies (like App Hosting), 
+  // the client IP is often appended to the list, or provided via specific headers.
+  const forwardedIps = forwarded.split(",").map(ip => ip.trim()).filter(Boolean);
+  const trustedForwardedIp = forwardedIps.length > 0 ? forwardedIps[forwardedIps.length - 1] : "";
+
+  const rawIp = fastlyIp || realIp || trustedForwardedIp || "127.0.0.1";
   const salt =
     process.env.ADMIN_SESSION_SECRET ||
     process.env.FIREBASE_PROJECT_ID ||

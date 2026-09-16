@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Inbox,
   Clock,
@@ -54,6 +54,22 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Focus trap and Escape to close
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedLead && modalRef.current) {
+      modalRef.current.focus();
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedLead) {
+        setSelectedLead(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedLead]);
 
   function parseJsonList(val: string): string[] {
     try {
@@ -167,7 +183,7 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
           </div>
         </div>
         <div className="p-4 rounded-xl border bg-card/60 shadow-xs">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email Delivery Failures</span>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email Send Failures</span>
           <div className="text-2xl font-bold mt-1">
             {failedCount > 0 ? (
               <span className="text-rose-600 flex items-center gap-1.5 text-xl font-semibold">
@@ -175,7 +191,7 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
               </span>
             ) : (
               <span className="text-emerald-700 text-base font-normal flex items-center gap-1">
-                <CheckCircle2 size={16} /> All delivered
+                <CheckCircle2 size={16} /> All sent
               </span>
             )}
           </div>
@@ -234,8 +250,8 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
             className="text-xs border rounded-md px-2.5 py-1.5 bg-background"
           >
             <option value="all">All notifications</option>
-            <option value="sent">Delivered</option>
-            <option value="failed">Failed delivery</option>
+            <option value="sent">Sent</option>
+            <option value="failed">Failed to send</option>
             <option value="pending">Pending</option>
           </select>
         </div>
@@ -304,7 +320,7 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
                     <span className="text-muted-foreground">Notification:</span>
                     {lead.notification_status === "sent" ? (
                       <span className="text-emerald-700 flex items-center gap-1 font-medium">
-                        <CheckCircle2 size={13} /> Delivered
+                        <CheckCircle2 size={13} /> Sent
                       </span>
                     ) : lead.notification_status === "failed" ? (
                       <span className="text-rose-600 flex items-center gap-1 font-medium" title={lead.notification_error || ""}>
@@ -340,7 +356,14 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
 
       {/* FULL BRIEF DETAIL MODAL */}
       {selectedLead && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+        <div 
+          ref={modalRef}
+          tabIndex={-1}
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto outline-none"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
           <div className="bg-background border rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="p-6 border-b flex items-start justify-between bg-muted/20">
@@ -353,11 +376,17 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
                     Received {new Date(selectedLead.created_at).toLocaleString()}
                   </span>
                 </div>
-                <h2 className="text-xl font-bold tracking-tight">
+                <h2 id="modal-title" className="text-xl font-bold tracking-tight">
                   {selectedLead.contact_name} {selectedLead.website_name && `(${selectedLead.website_name})`}
                 </h2>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedLead(null)} className="h-8 w-8 p-0 rounded-full">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setSelectedLead(null)} 
+                className="h-8 w-8 p-0 rounded-full"
+                aria-label="Close modal"
+              >
                 ✕
               </Button>
             </div>
@@ -371,15 +400,15 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
                   <div className="flex items-center gap-2">
                     {selectedLead.notification_status === "sent" ? (
                       <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
-                        <CheckCircle2 size={16} /> Delivered to p8339378@gmail.com
+                        <CheckCircle2 size={16} /> Sent to p8339378@gmail.com
                       </span>
                     ) : selectedLead.notification_status === "failed" ? (
                       <span className="text-rose-600 font-semibold flex items-center gap-1.5">
-                        <AlertCircle size={16} /> Delivery Failed
+                        <AlertCircle size={16} /> Send Failed
                       </span>
                     ) : (
                       <span className="text-amber-600 font-semibold flex items-center gap-1.5">
-                        <Clock size={16} /> Pending Delivery
+                        <Clock size={16} /> Pending Send
                       </span>
                     )}
                     <span className="text-xs text-muted-foreground">

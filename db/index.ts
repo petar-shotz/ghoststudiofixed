@@ -42,6 +42,7 @@ export interface ProjectBriefRecord {
   provided_assets: string;
   inspiration: string;
   privacy_consent: boolean;
+  customer_notified: boolean;
   rate_key: string;
   payload_hash: string;
 }
@@ -106,6 +107,7 @@ function normalizeBrief(snapshot: DocumentSnapshot<DocumentData>): ProjectBriefR
     provided_assets: asString(data.provided_assets, "[]"),
     inspiration: asString(data.inspiration),
     privacy_consent: data.privacy_consent === true,
+    customer_notified: data.customer_notified === true,
     rate_key: asString(data.rate_key),
     payload_hash: asString(data.payload_hash),
   };
@@ -201,6 +203,15 @@ export async function updateProjectBriefNotification(
       notification_error: result.success ? null : result.error || "Delivery rejected by provider",
       notification_attempts: FieldValue.increment(1),
       last_notification_at: Timestamp.now(),
+    });
+}
+
+export async function updateProjectBriefCustomerNotification(id: string): Promise<void> {
+  await getFirebaseAdminDb()
+    .collection(BRIEFS_COLLECTION)
+    .doc(id)
+    .update({
+      customer_notified: true,
     });
 }
 

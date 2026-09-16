@@ -61,7 +61,7 @@ const conceptDemos: ConceptDemo[] = [
     paletteName: "Lilac club",
     accentColor: "#d8c9f6",
     typeParam: "store",
-    styleParam: "editorial",
+    styleParam: "elegant",
     paletteParam: "lilac",
   },
   {

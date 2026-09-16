@@ -107,6 +107,7 @@ export async function sendBriefNotification(brief: BriefNotificationData): Promi
         headers: {
           'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
+          'Idempotency-Key': `owner-notify-${brief.id}`,
         },
         body: JSON.stringify({
           from: process.env.RESEND_FROM_EMAIL || 'Ghost Studio <notifications@ghoststudio.mk>',
@@ -231,5 +232,57 @@ export async function recordNotificationResult(briefId: string, result: Notifica
       "Failed to update notification status in Firestore:",
       error instanceof Error ? error.message : "Unknown Firebase error",
     );
+  }
+}
+
+export async function sendCustomerConfirmationEmail(brief: BriefNotificationData): Promise<NotificationResult> {
+  if (!process.env.RESEND_API_KEY) {
+    return { success: false, provider: "Resend", error: "No Resend API Key configured" };
+  }
+  
+  try {
+    const emailHtml = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a18; line-height: 1.5;">
+        <h2 style="font-size: 20px; color: #1a1a18;">Hi ${escapeHtml(brief.contact_name)},</h2>
+        <p>Thank you for reaching out to Ghost Studio!</p>
+        <p>We have safely received your website brief (Reference: <strong>${escapeHtml(brief.reference)}</strong>).</p>
+        <p>We are reviewing your requirements and will reach out to you shortly to discuss scope, price, and timeline.</p>
+        <br/>
+        <p>Best regards,<br/>Ghost Studio Team<br/><a href="https://ghoststudio.mk">ghoststudio.mk</a></p>
+      </div>
+    `;
+
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), 10000);
+
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Idempotency-Key': `customer-confirm-${brief.id}`,
+      },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL || 'Ghost Studio <notifications@ghoststudio.mk>',
+        to: brief.email,
+        subject: `Your Ghost Studio Brief Received (${brief.reference})`,
+        html: emailHtml,
+      }),
+      signal: abortController.signal,
+    }).finally(() => clearTimeout(timeout));
+
+    const data = (await res.json().catch(() => null)) as { id?: string; message?: string } | null;
+
+    if (res.ok && data?.id) {
+      return { success: true, provider: 'Resend', details: data };
+    } else {
+      const errorMsg = data?.message || "Resend error HTTP " + String(res.status);
+      console.error('Resend customer confirmation delivery failed:', errorMsg);
+      return { success: false, provider: 'Resend', error: errorMsg, details: data };
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Resend exception';
+    console.error('Resend customer confirmation exception:', message);
+    return { success: false, provider: 'Resend', error: message };
   }
 }

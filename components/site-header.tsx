@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Ghost, ArrowUpRight, Menu, X, Mail } from "lucide-react";
+import Image from "next/image";
+import { ArrowUpRight, Menu, X, Mail } from "lucide-react";
 
 export default function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -10,7 +11,7 @@ export default function SiteHeader() {
   return (
     <header className="site-header container relative">
       <Link href="/" className="brand" aria-label="Ghost Studio home">
-        <Ghost size={33} strokeWidth={2.1} fill="currentColor" className="brand-ghost" />
+        <Image src="/favicon.png" alt="" width={36} height={36} referrerPolicy="no-referrer" className="brand-ghost" />
         <span>
           ghost<span className="brand-light">studio</span>
         </span>
@@ -43,13 +44,15 @@ export default function SiteHeader() {
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         className="md:hidden p-2 rounded-lg text-neutral-700 hover:bg-neutral-100"
         aria-label="Toggle navigation menu"
+        aria-expanded={mobileMenuOpen}
+        aria-controls="mobile-menu"
       >
         {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="absolute top-full left-0 right-0 bg-[#fbfbf8] border-b border-[#181816]/10 p-5 shadow-lg flex flex-col gap-4 md:hidden z-50 animate-in slide-in-from-top-2">
+        <div id="mobile-menu" className="absolute top-full left-0 right-0 bg-[#fbfbf8] border-b border-[#181816]/10 p-5 shadow-lg flex flex-col gap-4 md:hidden z-50 animate-in slide-in-from-top-2">
           <nav className="flex flex-col gap-3 text-sm font-medium text-neutral-800">
             <a href="#possibilities" onClick={() => setMobileMenuOpen(false)}>
               What we build

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState, useMemo, type CSSProperties } from "react";
 import {
   ArrowLeft,
@@ -54,7 +55,7 @@ function Header() {
   return (
     <header className="site-header planner-header container">
       <Link href="/" className="brand" aria-label="Ghost Studio home">
-        <Ghost size={31} />
+        <Image src="/favicon.png" alt="" width={36} height={36} referrerPolicy="no-referrer" />
         <span>
           ghost<span className="brand-light">studio</span>
         </span>
