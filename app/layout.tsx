@@ -2,19 +2,18 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  icons: {
-    icon: "/favicon.png?v=2",
-shortcut: "/favicon.png?v=2",
-  },
-};
-
-export const metadata: Metadata = {
   metadataBase: new URL("https://ghoststudio.mk"),
   title: "Ghost Studio | Big ideas. Boo-tiful websites.",
-  description: "From your first page to your next big thing. We make getting a custom website feel easy.",
+  description:
+    "From your first page to your next big thing. We make getting a custom website feel easy.",
+  icons: {
+    icon: "/favicon.png?v=2",
+    shortcut: "/favicon.png?v=2",
+  },
   openGraph: {
     title: "Ghost Studio | Custom Websites",
-    description: "From your first page to your next big thing. We make getting a custom website feel easy.",
+    description:
+      "From your first page to your next big thing. We make getting a custom website feel easy.",
     url: "https://ghoststudio.mk",
     siteName: "Ghost Studio",
     images: [
@@ -31,7 +30,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Ghost Studio | Custom Websites",
-    description: "From your first page to your next big thing. We make getting a custom website feel easy.",
+    description:
+      "From your first page to your next big thing. We make getting a custom website feel easy.",
     images: ["/ghost-artist.webp"],
   },
 };
@@ -42,7 +42,9 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body>
