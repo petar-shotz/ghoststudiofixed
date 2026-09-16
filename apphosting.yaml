@@ -17,3 +17,9 @@ env:
 
   - variable: ADMIN_SESSION_SECRET
     secret: ADMIN_SESSION_SECRET
+
+      - variable: RESEND_API_KEY
+    secret: RESEND_API_KEY
+
+  - variable: RESEND_FROM_EMAIL
+    value: "Ghost Studio <notifications@ghoststudio.mk>"
