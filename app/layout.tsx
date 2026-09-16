@@ -3,8 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   icons: {
-    icon: "/favicon.png",
-    shortcut: "/favicon.png",
+    icon: "/favicon.png?v=2",
+shortcut: "/favicon.png?v=2",
   },
 };
 
