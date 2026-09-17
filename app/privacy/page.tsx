@@ -71,7 +71,10 @@ export default function Privacy() {
               <strong>Durable Storage First:</strong> Your enquiry is first saved into Ghost Studio’s persistent database, and an immutable reference identifier (e.g. <code>GS-XXXXXXXXXXXX</code>) is generated.
             </li>
             <li>
-              <strong>Notification to Studio:</strong> A notification containing your complete project requirements is sent to our review mailbox (<code>p8339378@gmail.com</code>) so our studio team can evaluate your scope.
+              <strong>Notification to Studio & You:</strong> A notification containing your complete project requirements is sent to our review mailbox (<code>p8339378@gmail.com</code>) so our studio team can evaluate your scope. A confirmation copy is also sent to the email address you provided. Both emails are routed securely through the Resend email infrastructure.
+            </li>
+            <li>
+              <strong>Fallback Notification:</strong> If our primary email service is temporarily unavailable, notifications are routed securely via FormSubmit.co, which will also dispatch a basic confirmation auto-response to you. FormSubmit does not store your email permanently.
             </li>
           </ol>
           <p className="mt-2 text-sm text-neutral-700">
@@ -102,8 +105,8 @@ export default function Privacy() {
           <h2>6. Accessing or deleting your data</h2>
           <p>
             If you wish to view, update, or request the deletion of your submitted brief, simply contact us at{" "}
-            <a href="mailto:p8339378@gmail.com" className="font-semibold underline text-neutral-900">
-              p8339378@gmail.com
+            <a href="mailto:petar@ghoststudio.mk" className="font-semibold underline text-neutral-900">
+              petar@ghoststudio.mk
             </a>{" "}
             with your project reference (e.g. <code>GS-XXXXXXXXXXXX</code>).
           </p>
@@ -119,7 +122,7 @@ export default function Privacy() {
       <footer className="privacy-footer container">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-500 w-full">
           <span>ghoststudio.mk · Ghost Studio</span>
-          <span>Questions? Contact p8339378@gmail.com</span>
+          <span>Questions? Contact petar@ghoststudio.mk</span>
         </div>
       </footer>
     </div>

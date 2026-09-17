@@ -42,7 +42,9 @@ export interface ProjectBriefRecord {
   provided_assets: string;
   inspiration: string;
   privacy_consent: boolean;
-  customer_notified: boolean;
+  customer_notification_status: "pending" | "sent" | "failed" | string;
+  customer_notification_error: string | null;
+  customer_notification_attempts: number;
   rate_key: string;
   payload_hash: string;
 }
@@ -107,7 +109,9 @@ function normalizeBrief(snapshot: DocumentSnapshot<DocumentData>): ProjectBriefR
     provided_assets: asString(data.provided_assets, "[]"),
     inspiration: asString(data.inspiration),
     privacy_consent: data.privacy_consent === true,
-    customer_notified: data.customer_notified === true,
+    customer_notification_status: asString(data.customer_notification_status, data.customer_notified === true ? "sent" : "pending"),
+    customer_notification_error: data.customer_notification_error == null ? null : asString(data.customer_notification_error),
+    customer_notification_attempts: asNumber(data.customer_notification_attempts, data.customer_notified === true ? 1 : 0),
     rate_key: asString(data.rate_key),
     payload_hash: asString(data.payload_hash),
   };
@@ -206,12 +210,19 @@ export async function updateProjectBriefNotification(
     });
 }
 
-export async function updateProjectBriefCustomerNotification(id: string): Promise<void> {
+export async function updateProjectBriefCustomerNotification(
+  id: string,
+  result: { success: boolean; error?: string }
+): Promise<void> {
   await getFirebaseAdminDb()
     .collection(BRIEFS_COLLECTION)
     .doc(id)
     .update({
-      customer_notified: true,
+      customer_notification_status: result.success ? "sent" : "failed",
+      customer_notification_error: result.success ? null : result.error || "Delivery rejected by provider",
+      customer_notification_attempts: FieldValue.increment(1),
+      // we could keep customer_notified true/false for legacy if we want
+      customer_notified: result.success,
     });
 }
 

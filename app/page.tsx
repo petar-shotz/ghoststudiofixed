@@ -260,7 +260,7 @@ export default function Home() {
             </span>
           </Link>
           <div className="text-xs text-neutral-600">
-            Direct email: <a href="mailto:p8339378@gmail.com" className="font-semibold underline hover:text-neutral-900">p8339378@gmail.com</a>
+            Direct email: <a href="mailto:petar@ghoststudio.mk" className="font-semibold underline hover:text-neutral-900">petar@ghoststudio.mk</a>
           </div>
           <div className="flex items-center gap-4 text-xs text-neutral-500">
             <Link href="/privacy" className="hover:underline">Privacy Notice</Link>

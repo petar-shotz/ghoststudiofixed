@@ -2,9 +2,10 @@ import {
   deleteProjectBrief,
   getProjectBrief,
   updateProjectBriefStatus,
+  updateProjectBriefCustomerNotification,
 } from "@/db";
 import { getAdminSession } from "@/lib/auth";
-import { recordNotificationResult, sendBriefNotification } from "@/lib/notifications";
+import { recordNotificationResult, sendBriefNotification, sendCustomerConfirmationEmail } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,29 @@ export async function POST(request: Request) {
               notification_error: updated.notification_error,
               notification_attempts: updated.notification_attempts,
               last_notification_at: updated.last_notification_at,
+            }
+          : null,
+      });
+    }
+
+    if (action === "retry_customer_notification") {
+      const brief = await getProjectBrief(briefId);
+      if (!brief) {
+        return Response.json({ error: "Brief not found." }, { status: 404 });
+      }
+
+      const result = await sendCustomerConfirmationEmail(brief);
+      await updateProjectBriefCustomerNotification(briefId, result);
+
+      const updated = await getProjectBrief(briefId);
+      return Response.json({
+        success: result.success,
+        error: result.error,
+        updated: updated
+          ? {
+              customer_notification_status: updated.customer_notification_status,
+              customer_notification_error: updated.customer_notification_error,
+              customer_notification_attempts: updated.customer_notification_attempts,
             }
           : null,
       });

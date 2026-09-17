@@ -21,6 +21,8 @@ export interface BriefNotificationData {
   timeline: string;
   provided_assets: string; // JSON string or text
   inspiration?: string | null;
+  notification_attempts?: number;
+  customer_notification_attempts?: number;
 }
 
 export interface NotificationResult {
@@ -107,7 +109,7 @@ export async function sendBriefNotification(brief: BriefNotificationData): Promi
         headers: {
           'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
-          'Idempotency-Key': `owner-notify-${brief.id}`,
+          'Idempotency-Key': `owner-notify-${brief.id}-${brief.notification_attempts || 0}`,
         },
         body: JSON.stringify({
           from: process.env.RESEND_FROM_EMAIL || 'Ghost Studio <notifications@ghoststudio.mk>',
@@ -260,7 +262,7 @@ export async function sendCustomerConfirmationEmail(brief: BriefNotificationData
       headers: {
         'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
-        'Idempotency-Key': `customer-confirm-${brief.id}`,
+        'Idempotency-Key': `customer-confirm-${brief.id}-${brief.customer_notification_attempts || 0}`,
       },
       body: JSON.stringify({
         from: process.env.RESEND_FROM_EMAIL || 'Ghost Studio <notifications@ghoststudio.mk>',

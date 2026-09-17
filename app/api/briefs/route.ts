@@ -134,11 +134,9 @@ export async function POST(request: Request) {
         }
       }
 
-      if (!existingBrief.customer_notified) {
+      if (existingBrief.customer_notification_status !== "sent") {
         const customerRes = await sendCustomerConfirmationEmail(existingBrief);
-        if (customerRes.success) {
-          await updateProjectBriefCustomerNotification(requestId);
-        }
+        await updateProjectBriefCustomerNotification(requestId, customerRes);
       }
 
       return response({
@@ -207,7 +205,9 @@ export async function POST(request: Request) {
       provided_assets: assetsJson,
       inspiration: data.inspiration || "",
       privacy_consent: true,
-      customer_notified: false,
+      customer_notification_status: "pending",
+      customer_notification_error: null,
+      customer_notification_attempts: 0,
       rate_key: ipHash,
       payload_hash: payloadHash,
     };
@@ -222,11 +222,9 @@ export async function POST(request: Request) {
     const notificationResult = await sendBriefNotification(brief);
     await recordNotificationResult(requestId, notificationResult);
 
-    if (!brief.customer_notified) {
+    if (brief.customer_notification_status !== "sent") {
       const customerRes = await sendCustomerConfirmationEmail(brief);
-      if (customerRes.success) {
-        await updateProjectBriefCustomerNotification(requestId);
-      }
+      await updateProjectBriefCustomerNotification(requestId, customerRes);
     }
 
     return response(

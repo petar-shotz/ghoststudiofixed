@@ -26,6 +26,9 @@ interface Lead {
   notification_error?: string | null;
   notification_attempts: number;
   last_notification_at?: number | null;
+  customer_notification_status?: "pending" | "sent" | "failed" | string;
+  customer_notification_error?: string | null;
+  customer_notification_attempts?: number;
   contact_name: string;
   email: string;
   phone?: string | null;
@@ -53,18 +56,54 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
   const [notificationFilter, setNotificationFilter] = useState("all");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [customerRetryingId, setCustomerRetryingId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Focus trap and Escape to close
   const modalRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedElement = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (selectedLead && modalRef.current) {
-      modalRef.current.focus();
+    if (selectedLead) {
+      previouslyFocusedElement.current = document.activeElement as HTMLElement;
+      if (modalRef.current) {
+        modalRef.current.focus();
+      }
+    } else {
+      previouslyFocusedElement.current?.focus();
+      previouslyFocusedElement.current = null;
     }
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && selectedLead) {
+      if (!selectedLead || !modalRef.current) return;
+
+      if (e.key === "Escape") {
+        e.preventDefault();
         setSelectedLead(null);
+        return;
+      }
+
+      if (e.key === "Tab") {
+        const focusableElements = modalRef.current.querySelectorAll(
+          'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        ) as NodeListOf<HTMLElement>;
+        
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement || document.activeElement === modalRef.current) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -129,6 +168,40 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
       );
     } finally {
       setRetryingId(null);
+    }
+  }
+
+  async function handleCustomerRetry(briefId: string) {
+    setCustomerRetryingId(briefId);
+    setActionMessage(null);
+    try {
+      const res = await fetch("/api/admin/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "retry_customer_notification", briefId }),
+      });
+      const data = (await res.json()) as { success?: boolean; error?: string };
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Customer confirmation retry failed");
+      }
+
+      setLeads((prev) =>
+        prev.map((l) => (l.id === briefId ? { ...l, customer_notification_status: "sent", customer_notification_error: null, customer_notification_attempts: (l.customer_notification_attempts || 0) + 1 } : l))
+      );
+
+      if (selectedLead?.id === briefId) {
+        setSelectedLead((prev) => (prev ? { ...prev, customer_notification_status: "sent", customer_notification_error: null, customer_notification_attempts: (prev.customer_notification_attempts || 0) + 1 } : null));
+      }
+
+      setActionMessage({ type: "success", text: "Customer confirmation successfully sent!" });
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Failed to deliver customer confirmation";
+      setActionMessage({ type: "error", text: errMsg });
+      setLeads((prev) =>
+        prev.map((l) => (l.id === briefId ? { ...l, customer_notification_status: "failed", customer_notification_error: errMsg, customer_notification_attempts: (l.customer_notification_attempts || 0) + 1 } : l))
+      );
+    } finally {
+      setCustomerRetryingId(null);
     }
   }
 
@@ -393,45 +466,89 @@ export default function AdminDashboard({ initialLeads }: { initialLeads: Lead[] 
 
             {/* Modal Content Scrollable Area */}
             <div className="p-6 overflow-y-auto space-y-6 text-sm">
-              {/* Notification Status Banner & Retry */}
-              <div className="p-4 rounded-xl border bg-muted/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email Notification</div>
-                  <div className="flex items-center gap-2">
-                    {selectedLead.notification_status === "sent" ? (
-                      <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
-                        <CheckCircle2 size={16} /> Sent to p8339378@gmail.com
+              {/* Notification Status Banners & Retries */}
+              <div className="grid sm:grid-cols-2 gap-3">
+                {/* Admin Alert */}
+                <div className="p-4 rounded-xl border bg-muted/30 flex flex-col gap-3">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin Alert</div>
+                    <div className="flex items-center gap-2">
+                      {selectedLead.notification_status === "sent" ? (
+                        <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
+                          <CheckCircle2 size={16} /> Sent
+                        </span>
+                      ) : selectedLead.notification_status === "failed" ? (
+                        <span className="text-rose-600 font-semibold flex items-center gap-1.5" title={selectedLead.notification_error || ""}>
+                          <AlertCircle size={16} /> Send Failed
+                        </span>
+                      ) : (
+                        <span className="text-amber-600 font-semibold flex items-center gap-1.5">
+                          <Clock size={16} /> Pending Send
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        ({selectedLead.notification_attempts} attempt{selectedLead.notification_attempts !== 1 ? "s" : ""})
                       </span>
-                    ) : selectedLead.notification_status === "failed" ? (
-                      <span className="text-rose-600 font-semibold flex items-center gap-1.5">
-                        <AlertCircle size={16} /> Send Failed
-                      </span>
-                    ) : (
-                      <span className="text-amber-600 font-semibold flex items-center gap-1.5">
-                        <Clock size={16} /> Pending Send
-                      </span>
+                    </div>
+                    {selectedLead.notification_error && (
+                      <p className="text-xs text-rose-600 mt-1 bg-rose-50 p-2 rounded border border-rose-200">
+                        Reason: {selectedLead.notification_error}
+                      </p>
                     )}
-                    <span className="text-xs text-muted-foreground">
-                      ({selectedLead.notification_attempts} attempt{selectedLead.notification_attempts !== 1 ? "s" : ""})
-                    </span>
                   </div>
-                  {selectedLead.notification_error && (
-                    <p className="text-xs text-rose-600 mt-1 bg-rose-50 p-2 rounded border border-rose-200">
-                      Reason: {selectedLead.notification_error}
-                    </p>
-                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={retryingId === selectedLead.id}
+                    onClick={() => handleRetry(selectedLead.id)}
+                    className="shrink-0 gap-1.5 text-xs bg-background w-full"
+                  >
+                    <RefreshCw size={13} className={retryingId === selectedLead.id ? "animate-spin" : ""} />
+                    {selectedLead.notification_status === "sent" ? "Resend" : "Retry alert"}
+                  </Button>
                 </div>
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={retryingId === selectedLead.id}
-                  onClick={() => handleRetry(selectedLead.id)}
-                  className="shrink-0 gap-1.5 text-xs bg-background"
-                >
-                  <RefreshCw size={13} className={retryingId === selectedLead.id ? "animate-spin" : ""} />
-                  {selectedLead.notification_status === "sent" ? "Resend to email" : "Retry notification"}
-                </Button>
+                {/* Customer Confirmation */}
+                <div className="p-4 rounded-xl border bg-muted/30 flex flex-col gap-3">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Customer Email</div>
+                    <div className="flex items-center gap-2">
+                      {selectedLead.customer_notification_status === "sent" ? (
+                        <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
+                          <CheckCircle2 size={16} /> Sent
+                        </span>
+                      ) : selectedLead.customer_notification_status === "failed" ? (
+                        <span className="text-rose-600 font-semibold flex items-center gap-1.5" title={selectedLead.customer_notification_error || ""}>
+                          <AlertCircle size={16} /> Send Failed
+                        </span>
+                      ) : (
+                        <span className="text-amber-600 font-semibold flex items-center gap-1.5">
+                          <Clock size={16} /> Pending Send
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        ({selectedLead.customer_notification_attempts || 0} attempt{selectedLead.customer_notification_attempts !== 1 ? "s" : ""})
+                      </span>
+                    </div>
+                    {selectedLead.customer_notification_error && (
+                      <p className="text-xs text-rose-600 mt-1 bg-rose-50 p-2 rounded border border-rose-200">
+                        Reason: {selectedLead.customer_notification_error}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={customerRetryingId === selectedLead.id}
+                    onClick={() => handleCustomerRetry(selectedLead.id)}
+                    className="shrink-0 gap-1.5 text-xs bg-background w-full"
+                  >
+                    <RefreshCw size={13} className={customerRetryingId === selectedLead.id ? "animate-spin" : ""} />
+                    {selectedLead.customer_notification_status === "sent" ? "Resend" : "Retry email"}
+                  </Button>
+                </div>
               </div>
 
               {/* Client Contact Info */}

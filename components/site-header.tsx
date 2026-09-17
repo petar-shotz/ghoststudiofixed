@@ -27,11 +27,11 @@ export default function SiteHeader() {
 
       <div className="hidden md:flex items-center gap-3">
         <a
-          href="mailto:p8339378@gmail.com"
+          href="mailto:petar@ghoststudio.mk"
           className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-1"
           title="Direct email contact"
         >
-          <Mail size={13} /> p8339378@gmail.com
+          <Mail size={13} /> petar@ghoststudio.mk
         </a>
         <Link href="/start" className="button button-small button-dark">
           Start a project <ArrowUpRight size={18} />
@@ -72,10 +72,10 @@ export default function SiteHeader() {
           </nav>
           <div className="pt-3 border-t border-neutral-200 flex flex-col gap-2.5">
             <a
-              href="mailto:p8339378@gmail.com"
+              href="mailto:petar@ghoststudio.mk"
               className="text-xs font-semibold text-neutral-700 flex items-center gap-1.5 py-1"
             >
-              <Mail size={14} /> p8339378@gmail.com
+              <Mail size={14} /> petar@ghoststudio.mk
             </a>
             <Link
               href="/start"

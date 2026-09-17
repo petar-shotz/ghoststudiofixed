@@ -38,6 +38,17 @@ export async function getClientIpHash(): Promise<string> {
   const realIp = headerList.get("x-real-ip") || "";
   const fastlyIp = headerList.get("fastly-client-ip") || "";
   
+  // NOTE: Firebase App Hosting (Cloud Run) proxy behavior must be verified in production.
+  // The Google Front End (GFE) typically appends the client IP to X-Forwarded-For.
+  // Log headers to verify which ones are trustworthy and cannot be spoofed by the client.
+  if (process.env.NODE_ENV === "production") {
+    console.log("IP_DEBUG_HEADERS:", {
+      forwarded,
+      realIp,
+      fastlyIp,
+    });
+  }
+
   // X-Forwarded-For can be spoofed. Behind managed edge proxies (like App Hosting), 
   // the client IP is often appended to the list, or provided via specific headers.
   const forwardedIps = forwarded.split(",").map(ip => ip.trim()).filter(Boolean);
